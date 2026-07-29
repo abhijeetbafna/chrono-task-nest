@@ -230,8 +230,9 @@ export function useTaskMutations() {
 
   const create = useMutation({
     mutationFn: async ({ labelIds, status, description, ...input }: TaskInput & { labelIds?: string[] }) => {
-      const { data: u } = await supabase.auth.getUser();
-      if (!u.user) throw new Error("Not signed in");
+      const cachedUser = qc.getQueryData<{ id: string }>(["session"]);
+      const userId = cachedUser?.id ?? (await supabase.auth.getUser()).data.user?.id;
+      if (!userId) throw new Error("Not signed in");
 
       const dbStatus = status === "on_hold" ? "todo" : (status ?? "todo");
       const dbRecurrence = status === "on_hold" ? "on_hold" : (input.recurrence ?? null);
@@ -246,7 +247,7 @@ export function useTaskMutations() {
           status: dbStatus,
           recurrence: dbRecurrence,
           description: dbDesc,
-          user_id: u.user.id,
+          user_id: userId,
         } as never)
         .select()
         .single();
@@ -255,7 +256,7 @@ export function useTaskMutations() {
       if (labelIds?.length) {
         await supabase
           .from("task_labels")
-          .insert(labelIds.map((l) => ({ task_id: task.id, label_id: l, user_id: u.user!.id })) as never);
+          .insert(labelIds.map((l) => ({ task_id: task.id, label_id: l, user_id: userId })) as never);
       }
       return task;
     },
@@ -270,7 +271,8 @@ export function useTaskMutations() {
       description,
       ...patch
     }: Partial<TaskInput> & { id: string; labelIds?: string[]; completed_at?: string | null; deleted_at?: string | null }) => {
-      const { data: u } = await supabase.auth.getUser();
+      const cachedUser = qc.getQueryData<{ id: string }>(["session"]);
+      const userId = cachedUser?.id ?? (await supabase.auth.getUser()).data.user?.id;
       const dbPatch: Record<string, unknown> = { ...patch };
 
       if (status === "on_hold") {
@@ -301,20 +303,51 @@ export function useTaskMutations() {
 
       const { error } = await supabase.from("tasks").update(dbPatch as never).eq("id", id);
       if (error) throw error;
-      if (labelIds && u.user) {
+      if (labelIds && userId) {
         await supabase.from("task_labels").delete().eq("task_id", id);
         if (labelIds.length) {
           await supabase
             .from("task_labels")
-            .insert(labelIds.map((l) => ({ task_id: id, label_id: l, user_id: u.user!.id })) as never);
+            .insert(labelIds.map((l) => ({ task_id: id, label_id: l, user_id: userId })) as never);
         }
       }
     },
-    onSuccess: done,
-    onError: (err: Error) => {
+    onMutate: async (newPatch) => {
+      await qc.cancelQueries({ queryKey: ["tasks"] });
+      await qc.cancelQueries({ queryKey: ["task", newPatch.id] });
+
+      const previousTasks = qc.getQueriesData<Task[]>({ queryKey: ["tasks"] });
+      const previousSingleTask = qc.getQueryData<Task | null>(["task", newPatch.id]);
+
+      const taskPatch = newPatch as unknown as Partial<Task>;
+
+      qc.setQueriesData<Task[]>({ queryKey: ["tasks"] }, (old) => {
+        if (!old) return old;
+        return old.map((t) => (t.id === newPatch.id ? { ...t, ...taskPatch } : t));
+      });
+
+      if (previousSingleTask) {
+        qc.setQueryData<Task | null>(["task", newPatch.id], {
+          ...previousSingleTask,
+          ...taskPatch,
+        });
+      }
+
+      return { previousTasks, previousSingleTask };
+    },
+    onError: (err: Error, newPatch, context) => {
       console.error("Task update error:", err);
+      if (context?.previousTasks) {
+        context.previousTasks.forEach(([key, value]) => {
+          qc.setQueryData(key, value);
+        });
+      }
+      if (context?.previousSingleTask) {
+        qc.setQueryData(["task", newPatch.id], context.previousSingleTask);
+      }
       toast.error(err?.message || "Failed to update task status");
     },
+    onSettled: done,
   });
 
   const trash = useMutation({

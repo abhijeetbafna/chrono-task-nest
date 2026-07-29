@@ -371,7 +371,7 @@ function SettingsPage() {
                           avatarUrl === item.url ? "border-primary ring-2 ring-primary/40 scale-105" : "border-transparent opacity-80 hover:opacity-100",
                         )}
                       >
-                        <img src={item.url} alt={item.name} className="size-full object-cover" />
+                        <img src={item.url} alt={item.name} loading="lazy" decoding="async" className="size-full object-cover" />
                       </button>
                     ))}
                   </div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import {
   Check,
@@ -101,7 +101,7 @@ export function TaskList({
   );
 }
 
-export function TaskRow({
+function TaskRowComponent({
   task,
   nested,
   subCount = 0,
@@ -301,3 +301,5 @@ export function TaskRow({
     </div>
   );
 }
+
+export const TaskRow = memo(TaskRowComponent);
