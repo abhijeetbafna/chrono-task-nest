@@ -10,6 +10,8 @@ import {
   LogOut,
   Menu,
   Moon,
+  PanelLeftClose,
+  PanelLeftOpen,
   Plus,
   Repeat,
   Search,
@@ -67,6 +69,21 @@ export function AppShell({ children }: { children: ReactNode }) {
   const markRead = useMarkNotificationsRead();
   const unread = notifications.filter((n) => !n.read).length;
 
+  const [collapsed, setCollapsed] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("tasknest.sidebar_collapsed") === "true";
+    }
+    return false;
+  });
+
+  const toggleCollapsed = () => {
+    setCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem("tasknest.sidebar_collapsed", String(next));
+      return next;
+    });
+  };
+
   const [theme, setTheme] = useState<"light" | "dark">(() => {
     if (typeof window !== "undefined") {
       return (
@@ -93,16 +110,36 @@ export function AppShell({ children }: { children: ReactNode }) {
   const initials = (profile?.display_name || user?.email || "?").slice(0, 2).toUpperCase();
 
   const sidebar = (
-    <div className="flex h-full w-64 shrink-0 flex-col gap-6 border-r bg-sidebar p-4">
-      <Link to="/dashboard" className="flex items-center gap-2.5 px-2 group">
-        <span className="grid size-9 shrink-0 place-items-center rounded-xl gradient-primary text-primary-foreground shadow-sm group-hover:scale-105 transition-transform">
-          <TaskNestLogo className="size-5" />
-        </span>
-        <span className="font-display text-lg font-extrabold tracking-tight">TaskNest</span>
-      </Link>
+    <div
+      className={cn(
+        "flex h-full shrink-0 flex-col gap-6 border-r bg-sidebar transition-all duration-300",
+        collapsed ? "w-16 p-2" : "w-64 p-4",
+      )}
+    >
+      <div className="flex items-center justify-between px-1">
+        <Link to="/dashboard" className="flex items-center gap-2.5 group">
+          <span className="grid size-9 shrink-0 place-items-center rounded-xl gradient-primary text-primary-foreground shadow-sm group-hover:scale-105 transition-transform">
+            <TaskNestLogo className="size-5" />
+          </span>
+          {!collapsed && <span className="font-display text-lg font-extrabold tracking-tight truncate">TaskNest</span>}
+        </Link>
 
-      <Button className="w-full justify-start gap-2 cursor-pointer" onClick={() => setQuickOpen(true)}>
-        <Plus className="size-4" /> New task
+        <button
+          onClick={toggleCollapsed}
+          className="hidden md:flex p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-sidebar-accent transition-colors cursor-pointer"
+          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {collapsed ? <PanelLeftOpen className="size-4" /> : <PanelLeftClose className="size-4" />}
+        </button>
+      </div>
+
+      <Button
+        className={cn("justify-start gap-2 cursor-pointer transition-all", collapsed && "px-0 justify-center size-9 rounded-xl")}
+        onClick={() => setQuickOpen(true)}
+        title={collapsed ? "New task" : undefined}
+      >
+        <Plus className="size-4 shrink-0" />
+        {!collapsed && <span>New task</span>}
       </Button>
 
       <nav className="flex-1 space-y-1 overflow-y-auto">
@@ -113,45 +150,64 @@ export function AppShell({ children }: { children: ReactNode }) {
               key={item.to}
               to={item.to}
               onClick={() => setMobileOpen(false)}
+              title={collapsed ? item.label : undefined}
               className={cn(
                 "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition-colors",
+                collapsed && "justify-center px-0 py-2.5",
                 active
                   ? "bg-sidebar-accent text-sidebar-accent-foreground"
                   : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-foreground",
               )}
             >
               <item.icon className="size-4 shrink-0" />
-              {item.label}
+              {!collapsed && <span>{item.label}</span>}
             </Link>
           );
         })}
 
         <div className="pt-4">
-          <div className="flex items-center justify-between px-3 pb-2">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-              Buckets
-            </p>
-            <button
-              onClick={() => setCreateBucketOpen(true)}
-              className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/80 transition-colors cursor-pointer"
-              title="Create new bucket"
-            >
-              <Plus className="size-3.5" />
-            </button>
-          </div>
+          {!collapsed ? (
+            <div className="flex items-center justify-between px-3 pb-2">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                Buckets
+              </p>
+              <button
+                onClick={() => setCreateBucketOpen(true)}
+                className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/80 transition-colors cursor-pointer"
+                title="Create new bucket"
+              >
+                <Plus className="size-3.5" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex justify-center pb-2">
+              <button
+                onClick={() => setCreateBucketOpen(true)}
+                className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/80 cursor-pointer"
+                title="Create new bucket"
+              >
+                <Plus className="size-3.5" />
+              </button>
+            </div>
+          )}
+
           {buckets.map((b) => (
             <Link
               key={b.id}
               to="/tasks"
               search={{ bucket: b.id }}
               onClick={() => setMobileOpen(false)}
-              className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-sidebar-accent/60 hover:text-foreground"
+              title={collapsed ? b.name : undefined}
+              className={cn(
+                "flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-sidebar-accent/60 hover:text-foreground",
+                collapsed && "justify-center px-0 py-2",
+              )}
             >
-              <span className="text-base leading-none">{b.icon || "📁"}</span>
-              <span className="truncate">{b.name}</span>
+              <span className="text-base leading-none shrink-0">{b.icon || "📁"}</span>
+              {!collapsed && <span className="truncate">{b.name}</span>}
             </Link>
           ))}
-          {buckets.length === 0 && (
+          {buckets.length === 0 && !collapsed && (
             <p className="px-3 py-1 text-xs text-muted-foreground italic">No buckets yet</p>
           )}
         </div>

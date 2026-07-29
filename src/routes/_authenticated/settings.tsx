@@ -53,15 +53,22 @@ export const Route = createFileRoute("/_authenticated/settings")({
   component: SettingsPage,
 });
 
-const PRESET_AVATARS = [
-  "https://api.dicebear.com/7.x/bottts/svg?seed=Alex",
-  "https://api.dicebear.com/7.x/bottts/svg?seed=Sam",
-  "https://api.dicebear.com/7.x/adventurer/svg?seed=Felix",
-  "https://api.dicebear.com/7.x/adventurer/svg?seed=Luna",
-  "https://api.dicebear.com/7.x/big-smile/svg?seed=Leo",
-  "https://api.dicebear.com/7.x/big-smile/svg?seed=Maya",
-  "https://api.dicebear.com/7.x/open-peeps/svg?seed=Jordan",
-  "https://api.dicebear.com/7.x/open-peeps/svg?seed=Taylor",
+const MALE_AVATARS = [
+  { name: "Alex", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alex&eyebrows=default&hair=short01" },
+  { name: "Marcus", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Marcus&top=shortHair&facialHairProbability=0" },
+  { name: "Felix", url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Felix" },
+  { name: "Leo", url: "https://api.dicebear.com/7.x/big-smile/svg?seed=Leo" },
+  { name: "Ryan", url: "https://api.dicebear.com/7.x/open-peeps/svg?seed=Ryan" },
+  { name: "David", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=David&facialHairProbability=0" },
+];
+
+const FEMALE_AVATARS = [
+  { name: "Sophia", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sophia&hair=long01" },
+  { name: "Emma", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Emma" },
+  { name: "Luna", url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Luna" },
+  { name: "Maya", url: "https://api.dicebear.com/7.x/big-smile/svg?seed=Maya" },
+  { name: "Chloe", url: "https://api.dicebear.com/7.x/open-peeps/svg?seed=Chloe" },
+  { name: "Olivia", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Olivia" },
 ];
 
 const TIMEZONES = [
@@ -94,6 +101,7 @@ function SettingsPage() {
   // Profile tab states
   const [displayName, setDisplayName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
+  const [avatarCategory, setAvatarCategory] = useState<"female" | "male">("female");
   const [timezone, setTimezone] = useState("Asia/Kolkata");
   const [timeFormat, setTimeFormat] = useState<"12h" | "24h">("12h");
 
@@ -220,37 +228,43 @@ function SettingsPage() {
             </h2>
 
             {/* Avatar section */}
-            <div className="space-y-3">
+            <div className="space-y-4">
               <Label>Profile Avatar</Label>
-              <div className="flex items-center gap-4">
-                <Avatar className="size-16 border-2 border-primary/20">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <Avatar className="size-20 border-2 border-primary/20 shrink-0">
                   {avatarUrl ? <AvatarImage src={avatarUrl} alt="Avatar" /> : null}
-                  <AvatarFallback className="bg-primary/15 text-lg font-bold text-primary">
+                  <AvatarFallback className="bg-primary/15 text-xl font-bold text-primary">
                     {(displayName || user?.email || "?").slice(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
 
-                <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground">Pick a preset avatar or upload your own image:</p>
-                  <div className="flex flex-wrap gap-2">
-                    {PRESET_AVATARS.map((url, i) => (
+                <div className="space-y-3 flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex gap-1.5 rounded-lg bg-muted p-1 text-xs">
                       <button
-                        key={url}
                         type="button"
-                        onClick={() => setAvatarUrl(url)}
+                        onClick={() => setAvatarCategory("female")}
                         className={cn(
-                          "size-8 rounded-full overflow-hidden border-2 cursor-pointer transition-transform hover:scale-110",
-                          avatarUrl === url ? "border-primary ring-2 ring-primary/30" : "border-transparent",
+                          "rounded-md px-2.5 py-1 font-bold transition-all cursor-pointer",
+                          avatarCategory === "female" ? "bg-card text-primary shadow-xs" : "text-muted-foreground",
                         )}
                       >
-                        <img src={url} alt={`Preset ${i}`} className="size-full object-cover" />
+                        Female Avatars
                       </button>
-                    ))}
-                  </div>
+                      <button
+                        type="button"
+                        onClick={() => setAvatarCategory("male")}
+                        className={cn(
+                          "rounded-md px-2.5 py-1 font-bold transition-all cursor-pointer",
+                          avatarCategory === "male" ? "bg-card text-primary shadow-xs" : "text-muted-foreground",
+                        )}
+                      >
+                        Male Avatars
+                      </button>
+                    </div>
 
-                  <div className="pt-1">
-                    <label className="inline-flex items-center gap-2 rounded-lg border bg-muted/30 px-3 py-1.5 text-xs font-semibold hover:bg-muted cursor-pointer transition-colors">
-                      <Upload className="size-3.5" /> Upload image
+                    <label className="inline-flex items-center gap-1.5 rounded-lg border bg-muted/40 px-2.5 py-1 text-xs font-semibold hover:bg-muted cursor-pointer transition-colors shrink-0">
+                      <Upload className="size-3.5 text-primary" /> Upload custom
                       <input
                         type="file"
                         accept="image/*"
@@ -258,6 +272,23 @@ function SettingsPage() {
                         onChange={handleAvatarUpload}
                       />
                     </label>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2.5 pt-1">
+                    {(avatarCategory === "female" ? FEMALE_AVATARS : MALE_AVATARS).map((item) => (
+                      <button
+                        key={item.url}
+                        type="button"
+                        onClick={() => setAvatarUrl(item.url)}
+                        title={item.name}
+                        className={cn(
+                          "size-10 rounded-full overflow-hidden border-2 cursor-pointer transition-transform hover:scale-110 relative bg-muted/30",
+                          avatarUrl === item.url ? "border-primary ring-2 ring-primary/40 scale-105" : "border-transparent opacity-80 hover:opacity-100",
+                        )}
+                      >
+                        <img src={item.url} alt={item.name} className="size-full object-cover" />
+                      </button>
+                    ))}
                   </div>
                 </div>
               </div>

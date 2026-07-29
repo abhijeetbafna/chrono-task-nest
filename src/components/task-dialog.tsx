@@ -640,6 +640,8 @@ export function TimelineBar({ task, children }: { task: Task; children: Task[] }
   if (!s || !e || e <= s) return null;
   const span = Math.max(1, e - s);
 
+  const is24h = typeof window !== "undefined" && localStorage.getItem("tasknest.time_format") === "24h";
+
   const formatTimeStr = (iso: string | null) =>
     iso
       ? new Date(iso).toLocaleString(undefined, {
@@ -647,6 +649,7 @@ export function TimelineBar({ task, children }: { task: Task; children: Task[] }
           day: "numeric",
           hour: "numeric",
           minute: "2-digit",
+          hour12: !is24h,
         })
       : "Unscheduled";
 
@@ -655,20 +658,26 @@ export function TimelineBar({ task, children }: { task: Task; children: Task[] }
       <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-3">
         <div>
           <h3 className="font-display text-sm font-bold flex items-center gap-2">
-            <Clock className="size-4 text-primary" /> Sub-task Timeline Breakdown
+            <Clock className="size-4 text-primary" /> Sub-task Schedule Breakdown
           </h3>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Visual position of sub-tasks relative to the parent timeframe
+            Visual breakdown of sub-task windows relative to the parent timeframe
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs font-semibold rounded-full bg-muted/60 px-3 py-1.5 text-muted-foreground">
           <span>Start: {formatTimeStr(task.start_datetime)}</span>
-          <ArrowRight className="size-3 shrink-0" />
+          <ArrowRight className="size-3 shrink-0 text-primary" />
           <span>Deadline: {formatTimeStr(task.end_datetime)}</span>
         </div>
       </div>
 
-      <div className="space-y-3">
+      <div className="rounded-xl bg-muted/30 p-3 space-y-1.5 border">
+        <p className="text-xs text-muted-foreground flex items-center gap-1.5 font-medium">
+          <span className="text-primary font-bold">ℹ️ Schedule Guide:</span> The track below represents the full parent timeframe. Each colored bar shows when that specific sub-task is scheduled.
+        </p>
+      </div>
+
+      <div className="space-y-4">
         {children.length === 0 ? (
           <p className="text-xs text-muted-foreground py-4 text-center border border-dashed rounded-xl">
             No sub-tasks added yet.
@@ -680,10 +689,19 @@ export function TimelineBar({ task, children }: { task: Task; children: Task[] }
 
             const rawLeft = Math.max(0, Math.min(100, ((cs - s) / span) * 100));
             const rawRight = Math.max(0, Math.min(100, ((ce - s) / span) * 100));
-            const width = Math.max(3, Math.min(100, rawRight - rawLeft));
+
+            // Guarantee a minimum 8% bar width so sub-tasks positioned at start/deadline remain clear legible pills
+            const width = Math.max(8, Math.min(100, rawRight - rawLeft));
             const left = Math.max(0, Math.min(100 - width, rawLeft));
 
             const isDone = c.status === "done";
+
+            const timingLabel =
+              rawLeft >= 95
+                ? "At parent deadline"
+                : rawLeft <= 5
+                  ? "At parent start"
+                  : `Scheduled ~${Math.round(left)}% through parent timeframe`;
 
             return (
               <div key={c.id} className="space-y-2 rounded-xl border bg-muted/20 p-3">
@@ -702,20 +720,29 @@ export function TimelineBar({ task, children }: { task: Task; children: Task[] }
                       {c.status.replace("_", " ")}
                     </span>
                   </div>
-                  <span className="text-[11px] font-mono text-muted-foreground shrink-0">
-                    {formatTimeStr(c.start_datetime)} → {formatTimeStr(c.end_datetime)}
-                  </span>
+                  <div className="flex items-center gap-2 text-xs shrink-0">
+                    <span className="text-[11px] font-medium text-muted-foreground bg-background px-2 py-0.5 rounded-md border">
+                      {formatTimeStr(c.start_datetime)} → {formatTimeStr(c.end_datetime)}
+                    </span>
+                  </div>
                 </div>
 
-                <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-muted/80">
-                  <div
-                    className={cn(
-                      "absolute top-0 bottom-0 rounded-full transition-all",
-                      isDone ? "bg-emerald-500" : "bg-primary",
-                    )}
-                    style={{ left: `${left}%`, width: `${width}%` }}
-                    title={`${c.title}: ${Math.round(left)}% to ${Math.round(left + width)}% of parent duration`}
-                  />
+                <div className="relative pt-1">
+                  <div className="relative h-3 w-full overflow-hidden rounded-full bg-muted/80">
+                    <div
+                      className={cn(
+                        "absolute top-0 bottom-0 rounded-full transition-all flex items-center justify-center text-[9px] font-bold text-primary-foreground shadow-xs",
+                        isDone ? "bg-emerald-500" : "bg-primary",
+                      )}
+                      style={{ left: `${left}%`, width: `${width}%` }}
+                      title={`${c.title}: Scheduled from ${formatTimeStr(c.start_datetime)} to ${formatTimeStr(c.end_datetime)} (${timingLabel})`}
+                    />
+                  </div>
+                  <div className="mt-1 flex justify-between text-[10px] text-muted-foreground font-mono px-0.5">
+                    <span>0% (Start)</span>
+                    <span>50%</span>
+                    <span>100% (Deadline)</span>
+                  </div>
                 </div>
               </div>
             );
