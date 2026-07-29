@@ -183,7 +183,7 @@ export function useTasks(opts: { bucketId?: string; trashed?: boolean } = {}) {
       if (error) throw error;
       return shape((data ?? []) as unknown as RawTask[]);
     },
-    staleTime: 15_000,
+    staleTime: 0,
   });
 }
 

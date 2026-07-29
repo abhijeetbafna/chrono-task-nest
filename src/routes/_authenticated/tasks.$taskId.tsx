@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, Check, Pause, Pencil, Play, Plus } from "lucide-react";
+import { ArrowLeft, Check, Pause, Pencil, Play, Plus, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useTaskMutations, useTasks } from "@/lib/api";
@@ -65,25 +65,37 @@ function TaskDetail() {
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
           <h1 className="min-w-0 font-display text-2xl font-extrabold tracking-tight">{task.title}</h1>
           <div className="flex flex-wrap shrink-0 items-center gap-2">
-            {task.status !== "in_progress" && task.status !== "done" && (
-              <Button
-                variant="outline"
-                className="gap-1.5 text-blue-600 border-blue-500/30 hover:bg-blue-500/10 cursor-pointer"
-                onClick={() => update.mutate({ id: task.id, status: "in_progress", completed_at: null })}
-              >
-                <Play className="size-4 fill-current" /> Start
-              </Button>
-            )}
-            {task.status !== "on_hold" && task.status !== "done" && (
-              <Button
-                variant="outline"
-                className="gap-1.5 text-amber-600 border-amber-500/30 hover:bg-amber-500/10 cursor-pointer"
-                onClick={() => update.mutate({ id: task.id, status: "on_hold", completed_at: null })}
-              >
-                <Pause className="size-4 fill-current" /> Pause
-              </Button>
-            )}
+            {/* Dynamic Start / Pause Toggle */}
             {task.status !== "done" && (
+              task.status === "in_progress" ? (
+                <Button
+                  variant="outline"
+                  className="gap-1.5 text-amber-600 border-amber-500/30 hover:bg-amber-500/10 cursor-pointer"
+                  onClick={() => update.mutate({ id: task.id, status: "on_hold", completed_at: null })}
+                >
+                  <Pause className="size-4 fill-current" /> Pause
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  className="gap-1.5 text-blue-600 border-blue-500/30 hover:bg-blue-500/10 cursor-pointer"
+                  onClick={() => update.mutate({ id: task.id, status: "in_progress", completed_at: null })}
+                >
+                  <Play className="size-4 fill-current" /> {task.status === "on_hold" ? "Resume" : "Start"}
+                </Button>
+              )
+            )}
+
+            {/* Dynamic Complete / Reopen Toggle */}
+            {task.status === "done" ? (
+              <Button
+                variant="outline"
+                className="gap-1.5 text-muted-foreground border-muted cursor-pointer"
+                onClick={() => update.mutate({ id: task.id, status: "todo", completed_at: null })}
+              >
+                <RotateCcw className="size-4" /> Reopen
+              </Button>
+            ) : (
               <Button
                 variant="outline"
                 className="gap-1.5 text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/10 cursor-pointer"
@@ -92,6 +104,7 @@ function TaskDetail() {
                 <Check className="size-4 stroke-[3]" /> Complete
               </Button>
             )}
+
             <Button variant="outline" className="gap-2" onClick={() => setEditOpen(true)}>
               <Pencil className="size-4" /> Edit
             </Button>

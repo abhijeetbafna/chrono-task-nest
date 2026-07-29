@@ -9,6 +9,7 @@ import {
   Pencil,
   Play,
   Plus,
+  RotateCcw,
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -207,41 +208,67 @@ export function TaskRow({
       </div>
 
       <div className="flex shrink-0 items-center gap-1">
-        {/* Progression Controls */}
-        {task.status !== "in_progress" && task.status !== "done" && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => update.mutate({ id: task.id, status: "in_progress", completed_at: null })}
-            className="h-8 gap-1 text-xs font-semibold text-blue-600 hover:bg-blue-500/10 dark:text-blue-400 cursor-pointer"
-            title="Start task (moves to In Progress)"
-          >
-            <Play className="size-3.5 fill-current" />
-            <span className="hidden sm:inline">Start</span>
-          </Button>
-        )}
-        {task.status !== "on_hold" && task.status !== "done" && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => update.mutate({ id: task.id, status: "on_hold", completed_at: null })}
-            className="h-8 gap-1 text-xs font-semibold text-amber-600 hover:bg-amber-500/10 dark:text-amber-400 cursor-pointer"
-            title="Pause task (moves to On Hold)"
-          >
-            <Pause className="size-3.5 fill-current" />
-            <span className="hidden sm:inline">Pause</span>
-          </Button>
-        )}
+        {/* Dynamic Start / Pause Toggle Button */}
         {task.status !== "done" && (
+          task.status === "in_progress" ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                update.mutate({ id: task.id, status: "on_hold", completed_at: null });
+                toast.info(`Paused “${task.title}” (On Hold)`);
+              }}
+              className="h-8 gap-1.5 text-xs font-semibold text-amber-600 hover:bg-amber-500/15 dark:text-amber-400 border border-amber-500/20 cursor-pointer"
+              title="Pause task (moves to On Hold)"
+            >
+              <Pause className="size-3.5 fill-current" />
+              <span>Pause</span>
+            </Button>
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                update.mutate({ id: task.id, status: "in_progress", completed_at: null });
+                toast.success(`Started “${task.title}” (In Progress)`);
+              }}
+              className="h-8 gap-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-500/15 dark:text-blue-400 border border-blue-500/20 cursor-pointer"
+              title="Start task (moves to In Progress)"
+            >
+              <Play className="size-3.5 fill-current" />
+              <span>{task.status === "on_hold" ? "Resume" : "Start"}</span>
+            </Button>
+          )
+        )}
+
+        {/* Dynamic Complete / Reopen Button */}
+        {task.status === "done" ? (
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => update.mutate({ id: task.id, status: "done", completed_at: new Date().toISOString() })}
-            className="h-8 gap-1 text-xs font-semibold text-emerald-600 hover:bg-emerald-500/10 dark:text-emerald-400 cursor-pointer"
+            onClick={() => {
+              update.mutate({ id: task.id, status: "todo", completed_at: null });
+              toast.info(`Reopened “${task.title}”`);
+            }}
+            className="h-8 gap-1.5 text-xs font-semibold text-muted-foreground hover:bg-muted border border-muted cursor-pointer"
+            title="Reopen task (moves to To Do)"
+          >
+            <RotateCcw className="size-3.5" />
+            <span>Reopen</span>
+          </Button>
+        ) : (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              update.mutate({ id: task.id, status: "done", completed_at: new Date().toISOString() });
+              toast.success(`Completed “${task.title}”`);
+            }}
+            className="h-8 gap-1.5 text-xs font-semibold text-emerald-600 hover:bg-emerald-500/15 dark:text-emerald-400 border border-emerald-500/20 cursor-pointer"
             title="Complete task (moves to Done)"
           >
             <Check className="size-3.5 stroke-[3]" />
-            <span className="hidden sm:inline">Complete</span>
+            <span>Complete</span>
           </Button>
         )}
 

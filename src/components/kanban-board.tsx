@@ -79,48 +79,15 @@ export function KanbanBoard({
                     onDragStart={(e) => e.dataTransfer.setData("text/plain", task.id)}
                     className="surface-card cursor-grab p-3 active:cursor-grabbing transition-shadow hover:shadow-md space-y-2.5"
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <PriorityDot priority={task.priority} />
-                        <Link
-                          to="/tasks/$taskId"
-                          params={{ taskId: task.id }}
-                          className="min-w-0 flex-1 truncate text-sm font-semibold hover:underline"
-                        >
-                          {task.title}
-                        </Link>
-                      </div>
-
-                      {/* Quick Progression Control Buttons */}
-                      <div className="flex items-center gap-1 shrink-0">
-                        {task.status !== "in_progress" && task.status !== "done" && (
-                          <button
-                            onClick={() => update.mutate({ id: task.id, status: "in_progress", completed_at: null })}
-                            className="p-1 rounded-md text-muted-foreground hover:text-blue-600 hover:bg-blue-500/10 cursor-pointer transition-colors"
-                            title="Start task (In Progress)"
-                          >
-                            <Play className="size-3.5 fill-current" />
-                          </button>
-                        )}
-                        {task.status !== "on_hold" && task.status !== "done" && (
-                          <button
-                            onClick={() => update.mutate({ id: task.id, status: "on_hold", completed_at: null })}
-                            className="p-1 rounded-md text-muted-foreground hover:text-amber-600 hover:bg-amber-500/10 cursor-pointer transition-colors"
-                            title="Pause task (On Hold)"
-                          >
-                            <Pause className="size-3.5 fill-current" />
-                          </button>
-                        )}
-                        {task.status !== "done" && (
-                          <button
-                            onClick={() => update.mutate({ id: task.id, status: "done", completed_at: new Date().toISOString() })}
-                            className="p-1 rounded-md text-muted-foreground hover:text-emerald-600 hover:bg-emerald-500/10 cursor-pointer transition-colors"
-                            title="Complete task (Done)"
-                          >
-                            <Check className="size-3.5 stroke-[3]" />
-                          </button>
-                        )}
-                      </div>
+                    <div className="flex items-center gap-2">
+                      <PriorityDot priority={task.priority} />
+                      <Link
+                        to="/tasks/$taskId"
+                        params={{ taskId: task.id }}
+                        className="min-w-0 flex-1 truncate text-sm font-semibold hover:underline"
+                      >
+                        {task.title}
+                      </Link>
                     </div>
 
                     <div className="flex flex-wrap gap-1">
@@ -156,53 +123,30 @@ export function KanbanBoard({
                           {kids.map((kid) => (
                             <li
                               key={kid.id}
-                              className="flex items-center justify-between gap-2 rounded-lg bg-card p-1.5 text-xs border shadow-2xs"
+                              className="flex items-center gap-2 rounded-lg bg-card p-1.5 text-xs border shadow-2xs"
                             >
-                              <div className="flex items-center gap-2 min-w-0 flex-1">
-                                <Checkbox
-                                  checked={kid.status === "done"}
-                                  onCheckedChange={() =>
-                                    update.mutate({
-                                      id: kid.id,
-                                      status: kid.status === "done" ? "todo" : "done",
-                                      completed_at: kid.status === "done" ? null : new Date().toISOString(),
-                                    })
-                                  }
-                                  className="size-3.5 cursor-pointer"
-                                />
-                                <PriorityDot priority={kid.priority} className="size-1.5" />
-                                <Link
-                                  to="/tasks/$taskId"
-                                  params={{ taskId: kid.id }}
-                                  className={cn(
-                                    "truncate min-w-0 flex-1 font-medium hover:underline",
-                                    kid.status === "done" && "line-through text-muted-foreground opacity-70",
-                                  )}
-                                >
-                                  {kid.title}
-                                </Link>
-                              </div>
-
-                              <div className="flex items-center gap-1 shrink-0">
-                                {kid.status !== "in_progress" && kid.status !== "done" && (
-                                  <button
-                                    onClick={() => update.mutate({ id: kid.id, status: "in_progress", completed_at: null })}
-                                    className="p-0.5 text-muted-foreground hover:text-blue-600 cursor-pointer"
-                                    title="Start sub-task"
-                                  >
-                                    <Play className="size-3 fill-current" />
-                                  </button>
+                              <Checkbox
+                                checked={kid.status === "done"}
+                                onCheckedChange={() =>
+                                  update.mutate({
+                                    id: kid.id,
+                                    status: kid.status === "done" ? "todo" : "done",
+                                    completed_at: kid.status === "done" ? null : new Date().toISOString(),
+                                  })
+                                }
+                                className="size-3.5 cursor-pointer"
+                              />
+                              <PriorityDot priority={kid.priority} className="size-1.5" />
+                              <Link
+                                to="/tasks/$taskId"
+                                params={{ taskId: kid.id }}
+                                className={cn(
+                                  "truncate min-w-0 flex-1 font-medium hover:underline",
+                                  kid.status === "done" && "line-through text-muted-foreground opacity-70",
                                 )}
-                                {kid.status !== "on_hold" && kid.status !== "done" && (
-                                  <button
-                                    onClick={() => update.mutate({ id: kid.id, status: "on_hold", completed_at: null })}
-                                    className="p-0.5 text-muted-foreground hover:text-amber-600 cursor-pointer"
-                                    title="Pause sub-task"
-                                  >
-                                    <Pause className="size-3 fill-current" />
-                                  </button>
-                                )}
-                              </div>
+                              >
+                                {kid.title}
+                              </Link>
                             </li>
                           ))}
                         </ul>

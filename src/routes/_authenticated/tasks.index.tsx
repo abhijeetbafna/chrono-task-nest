@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Filter, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -79,6 +80,13 @@ function TasksPage() {
   const activeFilterCount =
     filters.priorities.length + filters.labelIds.length + (filters.status !== "all" ? 1 : 0);
 
+  const todoCount = tasks.filter((t) => t.status === "todo").length;
+  const inProgressCount = tasks.filter((t) => t.status === "in_progress").length;
+  const onHoldCount = tasks.filter((t) => t.status === "on_hold").length;
+  const doneCount = tasks.filter((t) => t.status === "done").length;
+  const totalTasks = tasks.length;
+  const progressPercent = totalTasks > 0 ? Math.round((doneCount / totalTasks) * 100) : 0;
+
   return (
     <div className="space-y-5">
       <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:flex sm:justify-between">
@@ -95,6 +103,33 @@ function TasksPage() {
           <Plus className="size-4" /> New task
         </Button>
       </header>
+
+      {/* Status Legend & Progress Banner */}
+      <div className="surface-card p-4 space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="font-bold text-foreground">Status Legend:</span>
+            <span className="inline-flex items-center gap-1.5 font-semibold text-slate-600 dark:text-slate-400">
+              <span className="size-2 rounded-full bg-slate-400" /> To Do ({todoCount})
+            </span>
+            <span className="inline-flex items-center gap-1.5 font-semibold text-blue-600 dark:text-blue-400">
+              <span className="size-2 rounded-full bg-blue-500" /> In Progress ({inProgressCount})
+            </span>
+            <span className="inline-flex items-center gap-1.5 font-semibold text-amber-600 dark:text-amber-400">
+              <span className="size-2 rounded-full bg-amber-500" /> On Hold ({onHoldCount})
+            </span>
+            <span className="inline-flex items-center gap-1.5 font-semibold text-emerald-600 dark:text-emerald-400">
+              <span className="size-2 rounded-full bg-emerald-500" /> Done ({doneCount})
+            </span>
+          </div>
+
+          <span className="font-bold text-muted-foreground font-mono">
+            {doneCount}/{totalTasks} Completed ({progressPercent}%)
+          </span>
+        </div>
+
+        <Progress value={progressPercent} className="h-2" />
+      </div>
 
       <div className="flex flex-wrap items-center gap-2">
         <Input
