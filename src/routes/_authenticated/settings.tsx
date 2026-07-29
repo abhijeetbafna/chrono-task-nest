@@ -65,35 +65,15 @@ export const Route = createFileRoute("/_authenticated/settings")({
   component: SettingsPage,
 });
 
-// Dynamic Avatar Generators (Female, Male, and Unisex / Abstract categories)
+import { useQuery } from "@tanstack/react-query";
+
+// Dynamic Avatar Generators (Female, Male, and Abstract categories with verified 200 OK SVG endpoints)
 function getDynamicFemaleAvatars(seedOffset = 0): { name: string; url: string }[] {
+  const styles = ["lorelei", "micah", "personas", "big-smile"];
   const names = ["Sophia", "Emma", "Luna", "Maya", "Chloe", "Olivia", "Ava", "Isabella"];
   return names.map((name, i) => {
-    const seed = seedOffset ? `${name}_${seedOffset}` : name;
-    const url = i % 2 === 0
-      ? `https://api.dicebear.com/7.x/lorelei/svg?seed=${seed}`
-      : `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}&top=longHair&facialHairProbability=0`;
-    return { name, url };
-  });
-}
-
-function getDynamicMaleAvatars(seedOffset = 0): { name: string; url: string }[] {
-  const names = ["Alex", "Marcus", "Felix", "Leo", "Ryan", "David", "Ethan", "Noah"];
-  return names.map((name, i) => {
-    const seed = seedOffset ? `${name}_${seedOffset}` : name;
-    const url = i % 2 === 0
-      ? `https://api.dicebear.com/7.x/adventurer/svg?seed=${seed}`
-      : `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}&top=shortHair&facialHairProbability=0`;
-    return { name, url };
-  });
-}
-
-function getDynamicUnisexAvatars(seedOffset = 0): { name: string; url: string }[] {
-  const styles = ["bottts", "shapes", "identicon", "pixel-art"];
-  const names = ["Bot-Alpha", "Bot-Beta", "Pixel-1", "Shape-A", "Abstract-X", "Plant-Green", "Cyber-Neo", "Matrix-01"];
-  return names.map((name, i) => {
     const style = styles[i % styles.length];
-    const seed = seedOffset ? `${name}_${seedOffset}` : name;
+    const seed = seedOffset ? `female_${name}_${seedOffset}` : `female_${name}`;
     return {
       name,
       url: `https://api.dicebear.com/7.x/${style}/svg?seed=${seed}`,
@@ -101,32 +81,30 @@ function getDynamicUnisexAvatars(seedOffset = 0): { name: string; url: string }[
   });
 }
 
-// Dynamic Global Timezones fetched directly from browser Intl IANA runtime
-function getDynamicTimezones(): { value: string; label: string }[] {
-  try {
-    if (typeof Intl !== "undefined" && typeof (Intl as any).supportedValuesOf === "function") {
-      const zones = (Intl as any).supportedValuesOf("timeZone") as string[];
-      const now = new Date();
-      return zones.map((tz) => {
-        try {
-          const formatter = new Intl.DateTimeFormat("en-US", { timeZone: tz, timeZoneName: "shortOffset" });
-          const parts = formatter.formatToParts(now);
-          const offset = parts.find((p) => p.type === "timeZoneName")?.value || "";
-          return { value: tz, label: `${tz} (${offset})` };
-        } catch {
-          return { value: tz, label: tz };
-        }
-      });
-    }
-  } catch {
-    // Fallthrough fallback
-  }
-  return [
-    { value: "UTC", label: "UTC (Coordinated Universal Time)" },
-    { value: "Asia/Kolkata", label: "Asia/Kolkata (IST - UTC+5:30)" },
-    { value: "America/New_York", label: "America/New_York (EST - UTC-5:00)" },
-    { value: "Europe/London", label: "Europe/London (GMT - UTC+0:00)" },
-  ];
+function getDynamicMaleAvatars(seedOffset = 0): { name: string; url: string }[] {
+  const styles = ["adventurer", "micah", "personas", "big-smile"];
+  const names = ["Alex", "Marcus", "Felix", "Leo", "Ryan", "David", "Ethan", "Noah"];
+  return names.map((name, i) => {
+    const style = styles[i % styles.length];
+    const seed = seedOffset ? `male_${name}_${seedOffset}` : `male_${name}`;
+    return {
+      name,
+      url: `https://api.dicebear.com/7.x/${style}/svg?seed=${seed}`,
+    };
+  });
+}
+
+function getDynamicAbstractAvatars(seedOffset = 0): { name: string; url: string }[] {
+  const styles = ["bottts", "shapes", "identicon", "pixel-art"];
+  const names = ["Bot-Alpha", "Bot-Beta", "Pixel-1", "Shape-A", "Abstract-X", "Plant-Green", "Cyber-Neo", "Matrix-01"];
+  return names.map((name, i) => {
+    const style = styles[i % styles.length];
+    const seed = seedOffset ? `abstract_${name}_${seedOffset}` : `abstract_${name}`;
+    return {
+      name,
+      url: `https://api.dicebear.com/7.x/${style}/svg?seed=${seed}`,
+    };
+  });
 }
 
 function SettingsPage() {
@@ -148,7 +126,7 @@ function SettingsPage() {
   // Profile tab states
   const [displayName, setDisplayName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
-  const [avatarCategory, setAvatarCategory] = useState<"female" | "male" | "unisex">("female");
+  const [avatarCategory, setAvatarCategory] = useState<"female" | "male" | "abstract">("female");
   const [avatarSeed, setAvatarSeed] = useState(0);
   const [timezone, setTimezone] = useState("Asia/Kolkata");
   const [tzOpen, setTzOpen] = useState(false);
@@ -156,8 +134,35 @@ function SettingsPage() {
 
   const femaleAvatars = useMemo(() => getDynamicFemaleAvatars(avatarSeed), [avatarSeed]);
   const maleAvatars = useMemo(() => getDynamicMaleAvatars(avatarSeed), [avatarSeed]);
-  const unisexAvatars = useMemo(() => getDynamicUnisexAvatars(avatarSeed), [avatarSeed]);
-  const timezones = useMemo(() => getDynamicTimezones(), []);
+  const abstractAvatars = useMemo(() => getDynamicAbstractAvatars(avatarSeed), [avatarSeed]);
+
+  // Dynamic Timezones API via timeapi.io
+  const { data: rawTimezones = [] } = useQuery<string[]>({
+    queryKey: ["available-timezones"],
+    queryFn: async () => {
+      const res = await fetch("https://timeapi.io/api/timezone/availabletimezones");
+      if (!res.ok) throw new Error("Failed to fetch timezones");
+      return res.json();
+    },
+    staleTime: 24 * 60 * 60 * 1000,
+  });
+
+  const timezones = useMemo(() => {
+    const list = rawTimezones.length ? rawTimezones : [
+      "Asia/Kolkata", "UTC", "America/New_York", "Europe/London", "Asia/Tokyo", "Australia/Sydney", "Africa/Cairo"
+    ];
+    const now = new Date();
+    return list.map((tz) => {
+      try {
+        const formatter = new Intl.DateTimeFormat("en-US", { timeZone: tz, timeZoneName: "shortOffset" });
+        const parts = formatter.formatToParts(now);
+        const offset = parts.find((p) => p.type === "timeZoneName")?.value || "";
+        return { value: tz, label: offset ? `${tz} (${offset})` : tz };
+      } catch {
+        return { value: tz, label: tz };
+      }
+    });
+  }, [rawTimezones]);
 
   // Preferences tab states
   const [weekStart, setWeekStart] = useState("0");
@@ -317,13 +322,13 @@ function SettingsPage() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => setAvatarCategory("unisex")}
+                        onClick={() => setAvatarCategory("abstract")}
                         className={cn(
                           "rounded-md px-2.5 py-1 font-bold transition-all cursor-pointer flex items-center gap-1",
-                          avatarCategory === "unisex" ? "bg-card text-primary shadow-xs" : "text-muted-foreground",
+                          avatarCategory === "abstract" ? "bg-card text-primary shadow-xs" : "text-muted-foreground",
                         )}
                       >
-                        <Sparkles className="size-3 text-amber-500" /> Unisex / Abstract
+                        <Sparkles className="size-3 text-amber-500" /> Abstract
                       </button>
                     </div>
 
@@ -354,7 +359,7 @@ function SettingsPage() {
                       ? femaleAvatars
                       : avatarCategory === "male"
                       ? maleAvatars
-                      : unisexAvatars
+                      : abstractAvatars
                     ).map((item: { name: string; url: string }) => (
                       <button
                         key={item.url}
