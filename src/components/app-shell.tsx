@@ -112,11 +112,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   const sidebar = (
     <div
       className={cn(
-        "flex h-full shrink-0 flex-col gap-6 border-r bg-sidebar transition-all duration-300",
-        collapsed ? "w-16 p-2" : "w-64 p-4",
+        "flex h-full shrink-0 flex-col gap-6 border-r bg-sidebar overflow-x-hidden transition-all duration-300",
+        collapsed ? "w-16 p-2 items-center" : "w-64 p-4",
       )}
     >
-      <div className="flex items-center justify-between px-1">
+      <div className={cn("flex items-center justify-between w-full px-1", collapsed && "flex-col gap-2.5 items-center justify-center px-0")}>
         <Link to="/dashboard" className="flex items-center gap-2.5 group">
           <span className="grid size-9 shrink-0 place-items-center rounded-xl gradient-primary text-primary-foreground shadow-sm group-hover:scale-105 transition-transform">
             <TaskNestLogo className="size-5" />
@@ -134,7 +134,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </div>
 
       <Button
-        className={cn("justify-start gap-2 cursor-pointer transition-all", collapsed && "px-0 justify-center size-9 rounded-xl")}
+        className={cn("w-full justify-start gap-2 cursor-pointer transition-all", collapsed && "w-9 px-0 justify-center size-9 rounded-xl")}
         onClick={() => setQuickOpen(true)}
         title={collapsed ? "New task" : undefined}
       >
@@ -142,7 +142,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         {!collapsed && <span>New task</span>}
       </Button>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto">
+      <nav className="flex-1 w-full space-y-1 overflow-y-auto overflow-x-hidden">
         {NAV.map((item) => {
           const active = pathname === item.to || pathname.startsWith(`${item.to}/`);
           return (
@@ -152,15 +152,15 @@ export function AppShell({ children }: { children: ReactNode }) {
               onClick={() => setMobileOpen(false)}
               title={collapsed ? item.label : undefined}
               className={cn(
-                "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition-colors",
-                collapsed && "justify-center px-0 py-2.5",
+                "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition-colors w-full",
+                collapsed && "justify-center px-0 py-2.5 w-10 mx-auto",
                 active
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground font-bold shadow-2xs"
                   : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-foreground",
               )}
             >
               <item.icon className="size-4 shrink-0" />
-              {!collapsed && <span>{item.label}</span>}
+              {!collapsed && <span className="truncate">{item.label}</span>}
             </Link>
           );
         })}

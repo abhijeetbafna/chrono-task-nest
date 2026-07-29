@@ -73,13 +73,50 @@ const FEMALE_AVATARS = [
 
 const TIMEZONES = [
   { value: "UTC", label: "UTC (Coordinated Universal Time)" },
+  // Asia
   { value: "Asia/Kolkata", label: "Asia/Kolkata (IST - UTC+5:30)" },
-  { value: "America/New_York", label: "America/New_York (EST - UTC-5:00)" },
-  { value: "America/Los_Angeles", label: "America/Los_Angeles (PST - UTC-8:00)" },
-  { value: "Europe/London", label: "Europe/London (GMT - UTC+0:00)" },
-  { value: "Europe/Paris", label: "Europe/Paris (CET - UTC+1:00)" },
+  { value: "Asia/Dubai", label: "Asia/Dubai (GST - UTC+4:00)" },
+  { value: "Asia/Riyadh", label: "Asia/Riyadh (AST - UTC+3:00)" },
+  { value: "Asia/Singapore", label: "Asia/Singapore (SGT - UTC+8:00)" },
   { value: "Asia/Tokyo", label: "Asia/Tokyo (JST - UTC+9:00)" },
-  { value: "Australia/Sydney", label: "Australia/Sydney (AEST - UTC+10:00)" },
+  { value: "Asia/Shanghai", label: "Asia/Shanghai (CST - UTC+8:00)" },
+  { value: "Asia/Bangkok", label: "Asia/Bangkok (ICT - UTC+7:00)" },
+  { value: "Asia/Dhaka", label: "Asia/Dhaka (BST - UTC+6:00)" },
+  { value: "Asia/Karachi", label: "Asia/Karachi (PKT - UTC+5:00)" },
+  { value: "Asia/Jakarta", label: "Asia/Jakarta (WIB - UTC+7:00)" },
+  { value: "Asia/Seoul", label: "Asia/Seoul (KST - UTC+9:00)" },
+  { value: "Asia/Jerusalem", label: "Asia/Jerusalem (IDT - UTC+3:00)" },
+  // Europe
+  { value: "Europe/London", label: "Europe/London (GMT/BST - UTC+0:00/+1:00)" },
+  { value: "Europe/Paris", label: "Europe/Paris (CET/CEST - UTC+1:00/+2:00)" },
+  { value: "Europe/Berlin", label: "Europe/Berlin (CET/CEST - UTC+1:00/+2:00)" },
+  { value: "Europe/Amsterdam", label: "Europe/Amsterdam (CET/CEST - UTC+1:00/+2:00)" },
+  { value: "Europe/Madrid", label: "Europe/Madrid (CET/CEST - UTC+1:00/+2:00)" },
+  { value: "Europe/Rome", label: "Europe/Rome (CET/CEST - UTC+1:00/+2:00)" },
+  { value: "Europe/Moscow", label: "Europe/Moscow (MSK - UTC+3:00)" },
+  { value: "Europe/Athens", label: "Europe/Athens (EET - UTC+2:00)" },
+  { value: "Europe/Zurich", label: "Europe/Zurich (CET - UTC+1:00)" },
+  // Americas
+  { value: "America/New_York", label: "America/New_York (EST/EDT - UTC-5:00/-4:00)" },
+  { value: "America/Chicago", label: "America/Chicago (CST/CDT - UTC-6:00/-5:00)" },
+  { value: "America/Denver", label: "America/Denver (MST/MDT - UTC-7:00/-6:00)" },
+  { value: "America/Los_Angeles", label: "America/Los_Angeles (PST/PDT - UTC-8:00/-7:00)" },
+  { value: "America/Toronto", label: "America/Toronto (EST/EDT - UTC-5:00)" },
+  { value: "America/Vancouver", label: "America/Vancouver (PST/PDT - UTC-8:00)" },
+  { value: "America/Sao_Paulo", label: "America/Sao_Paulo (BRT - UTC-3:00)" },
+  { value: "America/Mexico_City", label: "America/Mexico_City (CST - UTC-6:00)" },
+  { value: "America/Buenos_Aires", label: "America/Buenos_Aires (ART - UTC-3:00)" },
+  // Africa
+  { value: "Africa/Cairo", label: "Africa/Cairo (EEST - UTC+3:00)" },
+  { value: "Africa/Johannesburg", label: "Africa/Johannesburg (SAST - UTC+2:00)" },
+  { value: "Africa/Lagos", label: "Africa/Lagos (WAT - UTC+1:00)" },
+  { value: "Africa/Nairobi", label: "Africa/Nairobi (EAT - UTC+3:00)" },
+  // Australia & Pacific
+  { value: "Australia/Sydney", label: "Australia/Sydney (AEST/AEDT - UTC+10:00/+11:00)" },
+  { value: "Australia/Melbourne", label: "Australia/Melbourne (AEST/AEDT - UTC+10:00/+11:00)" },
+  { value: "Australia/Perth", label: "Australia/Perth (AWST - UTC+8:00)" },
+  { value: "Pacific/Auckland", label: "Pacific/Auckland (NZST/NZDT - UTC+12:00/+13:00)" },
+  { value: "Pacific/Honolulu", label: "Pacific/Honolulu (HST - UTC-10:00)" },
 ];
 
 function SettingsPage() {

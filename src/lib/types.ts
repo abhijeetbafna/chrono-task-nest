@@ -1,5 +1,5 @@
 export type Priority = "urgent" | "high" | "medium" | "low" | "none";
-export type Status = "todo" | "in_progress" | "done";
+export type Status = "todo" | "in_progress" | "on_hold" | "done";
 
 export interface Bucket {
   id: string;
@@ -96,6 +96,7 @@ export const PRIORITY_RANK: Record<Priority, number> = {
 export const STATUSES: { value: Status; label: string }[] = [
   { value: "todo", label: "To Do" },
   { value: "in_progress", label: "In Progress" },
+  { value: "on_hold", label: "On Hold" },
   { value: "done", label: "Done" },
 ];
 

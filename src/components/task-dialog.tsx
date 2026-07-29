@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Select,
   SelectContent,
@@ -728,16 +729,31 @@ export function TimelineBar({ task, children }: { task: Task; children: Task[] }
                 </div>
 
                 <div className="relative pt-1">
-                  <div className="relative h-3 w-full overflow-hidden rounded-full bg-muted/80">
-                    <div
-                      className={cn(
-                        "absolute top-0 bottom-0 rounded-full transition-all flex items-center justify-center text-[9px] font-bold text-primary-foreground shadow-xs",
-                        isDone ? "bg-emerald-500" : "bg-primary",
-                      )}
-                      style={{ left: `${left}%`, width: `${width}%` }}
-                      title={`${c.title}: Scheduled from ${formatTimeStr(c.start_datetime)} to ${formatTimeStr(c.end_datetime)} (${timingLabel})`}
-                    />
-                  </div>
+                  <TooltipProvider delayDuration={100}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="relative h-3 w-full overflow-hidden rounded-full bg-muted/80 cursor-pointer">
+                          <div
+                            className={cn(
+                              "absolute top-0 bottom-0 rounded-full transition-all flex items-center justify-center text-[9px] font-bold text-primary-foreground shadow-xs",
+                              isDone ? "bg-emerald-500" : "bg-primary",
+                            )}
+                            style={{ left: `${left}%`, width: `${width}%` }}
+                          />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" align="center" className="max-w-xs text-center font-medium shadow-md">
+                        <p className="font-bold">{c.title}</p>
+                        <p className="text-[11px] opacity-90 mt-0.5">
+                          {formatTimeStr(c.start_datetime)} → {formatTimeStr(c.end_datetime)}
+                        </p>
+                        <p className="text-[10px] text-primary-foreground/80 mt-0.5 font-mono">
+                          ({timingLabel})
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+
                   <div className="mt-1 flex justify-between text-[10px] text-muted-foreground font-mono px-0.5">
                     <span>0% (Start)</span>
                     <span>50%</span>
