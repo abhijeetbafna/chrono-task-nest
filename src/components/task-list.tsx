@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import {
+  Check,
   ChevronRight,
   MoreHorizontal,
   Paperclip,
+  Pause,
   Pencil,
+  Play,
   Plus,
   Trash2,
 } from "lucide-react";
@@ -159,6 +162,17 @@ export function TaskRow({
           >
             {task.title}
           </Link>
+          <span
+            className={cn(
+              "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider shrink-0",
+              task.status === "done" && "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+              task.status === "in_progress" && "bg-blue-500/15 text-blue-600 dark:text-blue-400",
+              task.status === "on_hold" && "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+              task.status === "todo" && "bg-muted text-muted-foreground",
+            )}
+          >
+            {task.status.replace("_", " ")}
+          </span>
           {(task.labels ?? []).map((l) => (
             <LabelChip key={l.id} label={l} />
           ))}
@@ -193,6 +207,44 @@ export function TaskRow({
       </div>
 
       <div className="flex shrink-0 items-center gap-1">
+        {/* Progression Controls */}
+        {task.status !== "in_progress" && task.status !== "done" && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => update.mutate({ id: task.id, status: "in_progress", completed_at: null })}
+            className="h-8 gap-1 text-xs font-semibold text-blue-600 hover:bg-blue-500/10 dark:text-blue-400 cursor-pointer"
+            title="Start task (moves to In Progress)"
+          >
+            <Play className="size-3.5 fill-current" />
+            <span className="hidden sm:inline">Start</span>
+          </Button>
+        )}
+        {task.status !== "on_hold" && task.status !== "done" && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => update.mutate({ id: task.id, status: "on_hold", completed_at: null })}
+            className="h-8 gap-1 text-xs font-semibold text-amber-600 hover:bg-amber-500/10 dark:text-amber-400 cursor-pointer"
+            title="Pause task (moves to On Hold)"
+          >
+            <Pause className="size-3.5 fill-current" />
+            <span className="hidden sm:inline">Pause</span>
+          </Button>
+        )}
+        {task.status !== "done" && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => update.mutate({ id: task.id, status: "done", completed_at: new Date().toISOString() })}
+            className="h-8 gap-1 text-xs font-semibold text-emerald-600 hover:bg-emerald-500/10 dark:text-emerald-400 cursor-pointer"
+            title="Complete task (moves to Done)"
+          >
+            <Check className="size-3.5 stroke-[3]" />
+            <span className="hidden sm:inline">Complete</span>
+          </Button>
+        )}
+
         {onAddSub && (
           <Button variant="ghost" size="icon" onClick={onAddSub} aria-label="Add sub-task">
             <Plus className="size-4" />
