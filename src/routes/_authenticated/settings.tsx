@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   Clock,
@@ -53,71 +53,60 @@ export const Route = createFileRoute("/_authenticated/settings")({
   component: SettingsPage,
 });
 
-const MALE_AVATARS = [
-  { name: "Alex", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alex&eyebrows=default&hair=short01" },
-  { name: "Marcus", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Marcus&top=shortHair&facialHairProbability=0" },
-  { name: "Felix", url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Felix" },
-  { name: "Leo", url: "https://api.dicebear.com/7.x/big-smile/svg?seed=Leo" },
-  { name: "Ryan", url: "https://api.dicebear.com/7.x/open-peeps/svg?seed=Ryan" },
-  { name: "David", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=David&facialHairProbability=0" },
-];
+// Dynamic Avatar Generators (Maintaining Female & Male categories)
+function getDynamicMaleAvatars(seedOffset = 0): { name: string; url: string }[] {
+  const styles = ["bottts", "adventurer", "big-smile", "open-peeps", "avataaars", "micah"];
+  const names = ["Alex", "Marcus", "Felix", "Leo", "Ryan", "David", "Ethan", "Noah"];
+  return names.map((name, i) => {
+    const style = styles[i % styles.length];
+    const seed = seedOffset ? `${name}_${seedOffset}` : name;
+    return {
+      name,
+      url: `https://api.dicebear.com/7.x/${style}/svg?seed=${seed}`,
+    };
+  });
+}
 
-const FEMALE_AVATARS = [
-  { name: "Sophia", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sophia&hair=long01" },
-  { name: "Emma", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Emma" },
-  { name: "Luna", url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Luna" },
-  { name: "Maya", url: "https://api.dicebear.com/7.x/big-smile/svg?seed=Maya" },
-  { name: "Chloe", url: "https://api.dicebear.com/7.x/open-peeps/svg?seed=Chloe" },
-  { name: "Olivia", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Olivia" },
-];
+function getDynamicFemaleAvatars(seedOffset = 0): { name: string; url: string }[] {
+  const styles = ["lorelei", "adventurer", "big-smile", "open-peeps", "avataaars", "micah"];
+  const names = ["Sophia", "Emma", "Luna", "Maya", "Chloe", "Olivia", "Ava", "Isabella"];
+  return names.map((name, i) => {
+    const style = styles[i % styles.length];
+    const seed = seedOffset ? `${name}_${seedOffset}` : name;
+    return {
+      name,
+      url: `https://api.dicebear.com/7.x/${style}/svg?seed=${seed}`,
+    };
+  });
+}
 
-const TIMEZONES = [
-  { value: "UTC", label: "UTC (Coordinated Universal Time)" },
-  // Asia
-  { value: "Asia/Kolkata", label: "Asia/Kolkata (IST - UTC+5:30)" },
-  { value: "Asia/Dubai", label: "Asia/Dubai (GST - UTC+4:00)" },
-  { value: "Asia/Riyadh", label: "Asia/Riyadh (AST - UTC+3:00)" },
-  { value: "Asia/Singapore", label: "Asia/Singapore (SGT - UTC+8:00)" },
-  { value: "Asia/Tokyo", label: "Asia/Tokyo (JST - UTC+9:00)" },
-  { value: "Asia/Shanghai", label: "Asia/Shanghai (CST - UTC+8:00)" },
-  { value: "Asia/Bangkok", label: "Asia/Bangkok (ICT - UTC+7:00)" },
-  { value: "Asia/Dhaka", label: "Asia/Dhaka (BST - UTC+6:00)" },
-  { value: "Asia/Karachi", label: "Asia/Karachi (PKT - UTC+5:00)" },
-  { value: "Asia/Jakarta", label: "Asia/Jakarta (WIB - UTC+7:00)" },
-  { value: "Asia/Seoul", label: "Asia/Seoul (KST - UTC+9:00)" },
-  { value: "Asia/Jerusalem", label: "Asia/Jerusalem (IDT - UTC+3:00)" },
-  // Europe
-  { value: "Europe/London", label: "Europe/London (GMT/BST - UTC+0:00/+1:00)" },
-  { value: "Europe/Paris", label: "Europe/Paris (CET/CEST - UTC+1:00/+2:00)" },
-  { value: "Europe/Berlin", label: "Europe/Berlin (CET/CEST - UTC+1:00/+2:00)" },
-  { value: "Europe/Amsterdam", label: "Europe/Amsterdam (CET/CEST - UTC+1:00/+2:00)" },
-  { value: "Europe/Madrid", label: "Europe/Madrid (CET/CEST - UTC+1:00/+2:00)" },
-  { value: "Europe/Rome", label: "Europe/Rome (CET/CEST - UTC+1:00/+2:00)" },
-  { value: "Europe/Moscow", label: "Europe/Moscow (MSK - UTC+3:00)" },
-  { value: "Europe/Athens", label: "Europe/Athens (EET - UTC+2:00)" },
-  { value: "Europe/Zurich", label: "Europe/Zurich (CET - UTC+1:00)" },
-  // Americas
-  { value: "America/New_York", label: "America/New_York (EST/EDT - UTC-5:00/-4:00)" },
-  { value: "America/Chicago", label: "America/Chicago (CST/CDT - UTC-6:00/-5:00)" },
-  { value: "America/Denver", label: "America/Denver (MST/MDT - UTC-7:00/-6:00)" },
-  { value: "America/Los_Angeles", label: "America/Los_Angeles (PST/PDT - UTC-8:00/-7:00)" },
-  { value: "America/Toronto", label: "America/Toronto (EST/EDT - UTC-5:00)" },
-  { value: "America/Vancouver", label: "America/Vancouver (PST/PDT - UTC-8:00)" },
-  { value: "America/Sao_Paulo", label: "America/Sao_Paulo (BRT - UTC-3:00)" },
-  { value: "America/Mexico_City", label: "America/Mexico_City (CST - UTC-6:00)" },
-  { value: "America/Buenos_Aires", label: "America/Buenos_Aires (ART - UTC-3:00)" },
-  // Africa
-  { value: "Africa/Cairo", label: "Africa/Cairo (EEST - UTC+3:00)" },
-  { value: "Africa/Johannesburg", label: "Africa/Johannesburg (SAST - UTC+2:00)" },
-  { value: "Africa/Lagos", label: "Africa/Lagos (WAT - UTC+1:00)" },
-  { value: "Africa/Nairobi", label: "Africa/Nairobi (EAT - UTC+3:00)" },
-  // Australia & Pacific
-  { value: "Australia/Sydney", label: "Australia/Sydney (AEST/AEDT - UTC+10:00/+11:00)" },
-  { value: "Australia/Melbourne", label: "Australia/Melbourne (AEST/AEDT - UTC+10:00/+11:00)" },
-  { value: "Australia/Perth", label: "Australia/Perth (AWST - UTC+8:00)" },
-  { value: "Pacific/Auckland", label: "Pacific/Auckland (NZST/NZDT - UTC+12:00/+13:00)" },
-  { value: "Pacific/Honolulu", label: "Pacific/Honolulu (HST - UTC-10:00)" },
-];
+// Dynamic Global Timezones fetched directly from browser Intl IANA runtime
+function getDynamicTimezones(): { value: string; label: string }[] {
+  try {
+    if (typeof Intl !== "undefined" && typeof (Intl as any).supportedValuesOf === "function") {
+      const zones = (Intl as any).supportedValuesOf("timeZone") as string[];
+      const now = new Date();
+      return zones.map((tz) => {
+        try {
+          const formatter = new Intl.DateTimeFormat("en-US", { timeZone: tz, timeZoneName: "shortOffset" });
+          const parts = formatter.formatToParts(now);
+          const offset = parts.find((p) => p.type === "timeZoneName")?.value || "";
+          return { value: tz, label: `${tz} (${offset})` };
+        } catch {
+          return { value: tz, label: tz };
+        }
+      });
+    }
+  } catch {
+    // Fallthrough fallback
+  }
+  return [
+    { value: "UTC", label: "UTC (Coordinated Universal Time)" },
+    { value: "Asia/Kolkata", label: "Asia/Kolkata (IST - UTC+5:30)" },
+    { value: "America/New_York", label: "America/New_York (EST - UTC-5:00)" },
+    { value: "Europe/London", label: "Europe/London (GMT - UTC+0:00)" },
+  ];
+}
 
 function SettingsPage() {
   const { tab = "profile" } = Route.useSearch();
@@ -139,8 +128,13 @@ function SettingsPage() {
   const [displayName, setDisplayName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [avatarCategory, setAvatarCategory] = useState<"female" | "male">("female");
+  const [avatarSeed, setAvatarSeed] = useState(0);
   const [timezone, setTimezone] = useState("Asia/Kolkata");
   const [timeFormat, setTimeFormat] = useState<"12h" | "24h">("12h");
+
+  const femaleAvatars = useMemo(() => getDynamicFemaleAvatars(avatarSeed), [avatarSeed]);
+  const maleAvatars = useMemo(() => getDynamicMaleAvatars(avatarSeed), [avatarSeed]);
+  const timezones = useMemo(() => getDynamicTimezones(), []);
 
   // Preferences tab states
   const [weekStart, setWeekStart] = useState("0");
@@ -276,7 +270,7 @@ function SettingsPage() {
                 </Avatar>
 
                 <div className="space-y-3 flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex gap-1.5 rounded-lg bg-muted p-1 text-xs">
                       <button
                         type="button"
@@ -300,19 +294,30 @@ function SettingsPage() {
                       </button>
                     </div>
 
-                    <label className="inline-flex items-center gap-1.5 rounded-lg border bg-muted/40 px-2.5 py-1 text-xs font-semibold hover:bg-muted cursor-pointer transition-colors shrink-0">
-                      <Upload className="size-3.5 text-primary" /> Upload custom
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleAvatarUpload}
-                      />
-                    </label>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setAvatarSeed((s) => s + 1)}
+                        className="inline-flex items-center gap-1 rounded-lg border bg-muted/40 px-2.5 py-1 text-xs font-semibold hover:bg-muted cursor-pointer transition-colors"
+                        title="Generate new avatar styles"
+                      >
+                        🎲 Randomize
+                      </button>
+
+                      <label className="inline-flex items-center gap-1.5 rounded-lg border bg-muted/40 px-2.5 py-1 text-xs font-semibold hover:bg-muted cursor-pointer transition-colors shrink-0">
+                        <Upload className="size-3.5 text-primary" /> Custom
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleAvatarUpload}
+                        />
+                      </label>
+                    </div>
                   </div>
 
                   <div className="flex flex-wrap gap-2.5 pt-1">
-                    {(avatarCategory === "female" ? FEMALE_AVATARS : MALE_AVATARS).map((item) => (
+                    {(avatarCategory === "female" ? femaleAvatars : maleAvatars).map((item: { name: string; url: string }) => (
                       <button
                         key={item.url}
                         type="button"
@@ -352,8 +357,8 @@ function SettingsPage() {
                 <Label>Timezone</Label>
                 <Select value={timezone} onValueChange={setTimezone}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {TIMEZONES.map((tz) => (
+                  <SelectContent className="max-h-72">
+                    {timezones.map((tz: { value: string; label: string }) => (
                       <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
                     ))}
                   </SelectContent>

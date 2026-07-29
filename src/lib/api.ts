@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type {
   AppNotification,
@@ -7,6 +8,7 @@ import type {
   Habit,
   HabitLog,
   Label,
+  Status,
   Task,
 } from "./types";
 
@@ -163,11 +165,18 @@ export function useLabelMutations() {
 type RawTask = Task & { task_labels?: { labels: Label | null }[]; attachments?: { id: string }[] };
 
 function shape(rows: RawTask[]): Task[] {
-  return rows.map((r) => ({
-    ...r,
-    labels: (r.task_labels ?? []).map((tl) => tl.labels).filter(Boolean) as Label[],
-    attachment_count: (r.attachments ?? []).length,
-  }));
+  return rows.map((r) => {
+    const isPaused = r.description?.startsWith("[ON_HOLD]") || r.recurrence === "on_hold";
+    const desc = r.description ? r.description.replace(/^\[ON_HOLD\]\s*/, "") : null;
+    const status: Status = isPaused ? "on_hold" : (r.status as Status);
+    return {
+      ...r,
+      description: desc,
+      status,
+      labels: (r.task_labels ?? []).map((tl) => tl.labels).filter(Boolean) as Label[],
+      attachment_count: (r.attachments ?? []).length,
+    };
+  });
 }
 
 const SELECT = "*, task_labels(labels(*)), attachments(id)";
@@ -220,12 +229,25 @@ export function useTaskMutations() {
   };
 
   const create = useMutation({
-    mutationFn: async ({ labelIds, ...input }: TaskInput & { labelIds?: string[] }) => {
+    mutationFn: async ({ labelIds, status, description, ...input }: TaskInput & { labelIds?: string[] }) => {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) throw new Error("Not signed in");
+
+      const dbStatus = status === "on_hold" ? "todo" : (status ?? "todo");
+      const dbRecurrence = status === "on_hold" ? "on_hold" : (input.recurrence ?? null);
+      const dbDesc = status === "on_hold"
+        ? (description ? `[ON_HOLD] ${description}` : "[ON_HOLD]")
+        : (description ?? null);
+
       const { data, error } = await supabase
         .from("tasks")
-        .insert({ ...input, user_id: u.user.id } as never)
+        .insert({
+          ...input,
+          status: dbStatus,
+          recurrence: dbRecurrence,
+          description: dbDesc,
+          user_id: u.user.id,
+        } as never)
         .select()
         .single();
       if (error) throw error;
@@ -244,10 +266,40 @@ export function useTaskMutations() {
     mutationFn: async ({
       id,
       labelIds,
+      status,
+      description,
       ...patch
     }: Partial<TaskInput> & { id: string; labelIds?: string[]; completed_at?: string | null; deleted_at?: string | null }) => {
       const { data: u } = await supabase.auth.getUser();
-      const { error } = await supabase.from("tasks").update(patch as never).eq("id", id);
+      const dbPatch: Record<string, unknown> = { ...patch };
+
+      if (status === "on_hold") {
+        dbPatch.status = "todo";
+        dbPatch.recurrence = "on_hold";
+        if (description !== undefined) {
+          dbPatch.description = description ? `[ON_HOLD] ${description.replace(/^\[ON_HOLD\]\s*/, "")}` : "[ON_HOLD]";
+        } else {
+          const { data: existing } = await supabase.from("tasks").select("description").eq("id", id).maybeSingle();
+          const rawDesc = (existing as { description?: string })?.description ?? "";
+          dbPatch.description = `[ON_HOLD] ${rawDesc.replace(/^\[ON_HOLD\]\s*/, "")}`.trim();
+        }
+      } else if (status !== undefined) {
+        dbPatch.status = status;
+        dbPatch.recurrence = patch.recurrence ?? null;
+        if (description !== undefined) {
+          dbPatch.description = description ? description.replace(/^\[ON_HOLD\]\s*/, "") : null;
+        } else {
+          const { data: existing } = await supabase.from("tasks").select("description").eq("id", id).maybeSingle();
+          const rawDesc = (existing as { description?: string })?.description;
+          if (rawDesc?.startsWith("[ON_HOLD]")) {
+            dbPatch.description = rawDesc.replace(/^\[ON_HOLD\]\s*/, "") || null;
+          }
+        }
+      } else if (description !== undefined) {
+        dbPatch.description = description;
+      }
+
+      const { error } = await supabase.from("tasks").update(dbPatch as never).eq("id", id);
       if (error) throw error;
       if (labelIds && u.user) {
         await supabase.from("task_labels").delete().eq("task_id", id);
@@ -259,6 +311,10 @@ export function useTaskMutations() {
       }
     },
     onSuccess: done,
+    onError: (err: Error) => {
+      console.error("Task update error:", err);
+      toast.error(err?.message || "Failed to update task status");
+    },
   });
 
   const trash = useMutation({
