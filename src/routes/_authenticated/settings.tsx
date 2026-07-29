@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
+  Check,
+  ChevronsUpDown,
   Clock,
   Globe,
   LogOut,
   Palette,
   Plus,
   Settings as SettingsIcon,
+  Sparkles,
   Tag,
   Trash2,
   Upload,
@@ -17,6 +20,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -53,23 +65,32 @@ export const Route = createFileRoute("/_authenticated/settings")({
   component: SettingsPage,
 });
 
-// Dynamic Avatar Generators (Maintaining Female & Male categories)
-function getDynamicMaleAvatars(seedOffset = 0): { name: string; url: string }[] {
-  const styles = ["bottts", "adventurer", "big-smile", "open-peeps", "avataaars", "micah"];
-  const names = ["Alex", "Marcus", "Felix", "Leo", "Ryan", "David", "Ethan", "Noah"];
+// Dynamic Avatar Generators (Female, Male, and Unisex / Abstract categories)
+function getDynamicFemaleAvatars(seedOffset = 0): { name: string; url: string }[] {
+  const names = ["Sophia", "Emma", "Luna", "Maya", "Chloe", "Olivia", "Ava", "Isabella"];
   return names.map((name, i) => {
-    const style = styles[i % styles.length];
     const seed = seedOffset ? `${name}_${seedOffset}` : name;
-    return {
-      name,
-      url: `https://api.dicebear.com/7.x/${style}/svg?seed=${seed}`,
-    };
+    const url = i % 2 === 0
+      ? `https://api.dicebear.com/7.x/lorelei/svg?seed=${seed}`
+      : `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}&top=longHair&facialHairProbability=0`;
+    return { name, url };
   });
 }
 
-function getDynamicFemaleAvatars(seedOffset = 0): { name: string; url: string }[] {
-  const styles = ["lorelei", "adventurer", "big-smile", "open-peeps", "avataaars", "micah"];
-  const names = ["Sophia", "Emma", "Luna", "Maya", "Chloe", "Olivia", "Ava", "Isabella"];
+function getDynamicMaleAvatars(seedOffset = 0): { name: string; url: string }[] {
+  const names = ["Alex", "Marcus", "Felix", "Leo", "Ryan", "David", "Ethan", "Noah"];
+  return names.map((name, i) => {
+    const seed = seedOffset ? `${name}_${seedOffset}` : name;
+    const url = i % 2 === 0
+      ? `https://api.dicebear.com/7.x/adventurer/svg?seed=${seed}`
+      : `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}&top=shortHair&facialHairProbability=0`;
+    return { name, url };
+  });
+}
+
+function getDynamicUnisexAvatars(seedOffset = 0): { name: string; url: string }[] {
+  const styles = ["bottts", "shapes", "identicon", "pixel-art"];
+  const names = ["Bot-Alpha", "Bot-Beta", "Pixel-1", "Shape-A", "Abstract-X", "Plant-Green", "Cyber-Neo", "Matrix-01"];
   return names.map((name, i) => {
     const style = styles[i % styles.length];
     const seed = seedOffset ? `${name}_${seedOffset}` : name;
@@ -127,13 +148,15 @@ function SettingsPage() {
   // Profile tab states
   const [displayName, setDisplayName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
-  const [avatarCategory, setAvatarCategory] = useState<"female" | "male">("female");
+  const [avatarCategory, setAvatarCategory] = useState<"female" | "male" | "unisex">("female");
   const [avatarSeed, setAvatarSeed] = useState(0);
   const [timezone, setTimezone] = useState("Asia/Kolkata");
+  const [tzOpen, setTzOpen] = useState(false);
   const [timeFormat, setTimeFormat] = useState<"12h" | "24h">("12h");
 
   const femaleAvatars = useMemo(() => getDynamicFemaleAvatars(avatarSeed), [avatarSeed]);
   const maleAvatars = useMemo(() => getDynamicMaleAvatars(avatarSeed), [avatarSeed]);
+  const unisexAvatars = useMemo(() => getDynamicUnisexAvatars(avatarSeed), [avatarSeed]);
   const timezones = useMemo(() => getDynamicTimezones(), []);
 
   // Preferences tab states
@@ -271,7 +294,7 @@ function SettingsPage() {
 
                 <div className="space-y-3 flex-1 min-w-0">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex gap-1.5 rounded-lg bg-muted p-1 text-xs">
+                    <div className="flex flex-wrap gap-1 rounded-lg bg-muted p-1 text-xs">
                       <button
                         type="button"
                         onClick={() => setAvatarCategory("female")}
@@ -280,7 +303,7 @@ function SettingsPage() {
                           avatarCategory === "female" ? "bg-card text-primary shadow-xs" : "text-muted-foreground",
                         )}
                       >
-                        Female Avatars
+                        Female
                       </button>
                       <button
                         type="button"
@@ -290,7 +313,17 @@ function SettingsPage() {
                           avatarCategory === "male" ? "bg-card text-primary shadow-xs" : "text-muted-foreground",
                         )}
                       >
-                        Male Avatars
+                        Male
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setAvatarCategory("unisex")}
+                        className={cn(
+                          "rounded-md px-2.5 py-1 font-bold transition-all cursor-pointer flex items-center gap-1",
+                          avatarCategory === "unisex" ? "bg-card text-primary shadow-xs" : "text-muted-foreground",
+                        )}
+                      >
+                        <Sparkles className="size-3 text-amber-500" /> Unisex / Abstract
                       </button>
                     </div>
 
@@ -317,7 +350,12 @@ function SettingsPage() {
                   </div>
 
                   <div className="flex flex-wrap gap-2.5 pt-1">
-                    {(avatarCategory === "female" ? femaleAvatars : maleAvatars).map((item: { name: string; url: string }) => (
+                    {(avatarCategory === "female"
+                      ? femaleAvatars
+                      : avatarCategory === "male"
+                      ? maleAvatars
+                      : unisexAvatars
+                    ).map((item: { name: string; url: string }) => (
                       <button
                         key={item.url}
                         type="button"
@@ -355,14 +393,45 @@ function SettingsPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="grid gap-2">
                 <Label>Timezone</Label>
-                <Select value={timezone} onValueChange={setTimezone}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent className="max-h-72">
-                    {timezones.map((tz: { value: string; label: string }) => (
-                      <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Popover open={tzOpen} onOpenChange={setTzOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={tzOpen}
+                      className="w-full justify-between font-normal text-xs h-9 bg-background cursor-pointer"
+                    >
+                      <span className="truncate">
+                        {timezone ? timezones.find((tz) => tz.value === timezone)?.label || timezone : "Search timezone..."}
+                      </span>
+                      <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[320px] sm:w-[380px] p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Search city or timezone (e.g. Kolkata, London, New York)..." className="h-9 text-xs" />
+                      <CommandList className="max-h-64 overflow-y-auto">
+                        <CommandEmpty className="py-6 text-center text-xs text-muted-foreground">No timezone found.</CommandEmpty>
+                        <CommandGroup>
+                          {timezones.map((tz: { value: string; label: string }) => (
+                            <CommandItem
+                              key={tz.value}
+                              value={`${tz.value} ${tz.label}`}
+                              onSelect={() => {
+                                setTimezone(tz.value);
+                                setTzOpen(false);
+                              }}
+                              className="text-xs flex items-center justify-between cursor-pointer"
+                            >
+                              <span className="truncate">{tz.label}</span>
+                              <Check className={cn("size-3.5 shrink-0 ml-2", timezone === tz.value ? "opacity-100 text-primary" : "opacity-0")} />
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
 
               <div className="grid gap-2">
